@@ -1,74 +1,64 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import MovieResult from './movie-result.component';
 
-export default class SearchMovies extends Component {
-  constructor(props) {
-    super(props);
-    this.search = this.search.bind(this);
-    this.handleChangedInputMovie = this.handleChangedInputMovie.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.searchAsync = this.searchAsync.bind(this);
+function SearchMovies() {
 
-    this.state = {currMovie: "",
-                  movies: [],
-                  isFetching: false}
-  }
+    const [currMovie, setCurrMovie] = useState("");
+    const [movies, setMovies] = useState([]);
+    const [isFetching, setIsFetching] = useState(false);
 
-   async searchAsync(movieTitle){
+   const search = async (movieTitle) => {
 
-    this.setState({...this.state, isFetching: true});
-
-    const uri = "https://api.themoviedb.org/3"
+    const uri = "https://api.themoviedb.org/3";
     const apiKey = "?api_key=e2f0ecaea4f6b74c81c6488cd6c40111";
     const queryType = "/search/movie";
     const jargon = "&language=en-US&";
     const endJargon = "&page=1&include_adult=false";
     const query = "query=" + movieTitle;
 
-    let list = [];
-
-    axios.get(uri + queryType + apiKey + jargon + query + endJargon)
-        .then(response => {
-            list = response.data.results;
-            alert("fetching");
-            this.setState({...this.state, movies: list, isFetching: false});
-        })
-        .catch(e => {
-            alert("error");
-            this.setState({...this.state, isFetching: false});
-        });
+    try{
+        setIsFetching(true);
+        const response = await axios.get(uri + queryType + apiKey + jargon + query + endJargon);
+        return response;
+    }
+    catch(e){
+        alert(e);
+        setIsFetching(false);
+    }
   }
 
-  search = this.searchAsync;
-
-  handleChangedInputMovie(event){
-    this.setState(
-        {...this.state, currMovie: event.target.value}
-    );
+  const handleChangedInputMovie = event => {
+    setCurrMovie(event.target.value);
   }
 
-  handleSubmit(event){
-    this.search(this.state.currMovie);
+  const handleSubmit = event => {
+    event.preventDefault();
+
+    search(currMovie).then(response => {
+        console.log(response);
+        setMovies(response.data.results);
+        setIsFetching(false);
+    });
   }
 
-  render(){
     return(
         <div>
             <h3>Search for similar movies</h3>
-            <h3>Curr Movie is: {this.state.currMovie}</h3>
-            <form onSubmit={this.handleSubmit}>
+            <h3>Curr Movie is: {currMovie}</h3>
+            <form onSubmit={handleSubmit}>
                     <label>Search: </label>
                     <input type="text"
                         required
-                        value={this.state.currMovie}
-                        onChange={this.handleChangedInputMovie}/>
+                        value={currMovie}
+                        onChange={handleChangedInputMovie}/>
                     <input type="submit" value="Submit" />
             </form>
-            <p>{this.state.isFetching ? 'Fetching movies...' : ''}</p>
-            <MovieResult movieList={this.state.movies}/>
+            <p>{isFetching ? 'Fetching movies...' : ''}</p>
+            <MovieResult movieList={movies}/>
         </div>
     )
-  }
 }
+
+export default SearchMovies;
